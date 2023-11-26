@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import Card from '../models/card';
 import { CustomRequest } from '../types/customRequestType';
+import { likeCard, dislikeCard } from '../controllers/card';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.post('/', (req: CustomRequest, res) => {
 router.delete('/:cardId', (req, res) => Card.findByIdAndDelete(req.params.cardId)
   .then(() => res.send({ message: 'Карточка удалена успешно' }))
   .catch(() => res.status(400).send({ message: 'Произошла ошибка' })));
+
+router.put('/:cardId/likes', likeCard);
+router.delete('/:cardId/likes', dislikeCard);
 
 export default router;
