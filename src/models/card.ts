@@ -27,6 +27,8 @@ const cardSchema = new Schema<ICard>({
   likes: [
     {
       type: Schema.Types.ObjectId,
+      ref: 'user',
+      required: true,
       default: [],
     },
   ],

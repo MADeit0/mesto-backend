@@ -13,7 +13,6 @@ export const createCard = (req: CustomRequest, res: Response) => {
     name: req.body.name,
     link: req.body.link,
     owner: id,
-    likes: [],
   })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
@@ -25,21 +24,27 @@ export const createCard = (req: CustomRequest, res: Response) => {
 };
 
 export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelete(req.params.cardId)
+  .orFail(new Error('NotFound'))
   .then(() => res.send({ message: 'Карточка удалена успешно' }))
-  .catch(() => res.status(statusCodes.NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена' }));
+  .catch((err) => {
+    switch (true) {
+      case err.name === 'CastError' || err.message === 'NotFound':
+        res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        break;
+      default:
+        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+    }
+  });
 
 export const likeCard = (req: CustomRequest, res: Response) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user?._id } },
   { new: true },
-)
-  .then((card) => res.send({ data: card }))
+).orFail(new Error('NotFound'))
+  .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
-    switch (err.name) {
-      case 'ValidationError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
-        break;
-      case 'CastError':
+    switch (true) {
+      case err.name === 'CastError' || err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
       default:
@@ -51,14 +56,11 @@ export const dislikeCard = (req: CustomRequest, res: Response) => Card.findByIdA
   req.params.cardId,
   { $pull: { likes: req.user?._id } },
   { new: true },
-)
-  .then((card) => res.send({ data: card }))
+).orFail(new Error('NotFound'))
+  .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
-    switch (err.name) {
-      case 'ValidationError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятии лайка' });
-        break;
-      case 'CastError':
+    switch (true) {
+      case err.name === 'CastError' || err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
       default:

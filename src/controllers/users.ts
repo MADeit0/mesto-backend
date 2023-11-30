@@ -8,13 +8,17 @@ export const findUsers = (req: Request, res: Response) => User.find({})
   .catch(() => res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
 
 export const findUserById = (req: Request, res: Response) => User.findById(req.params.userId)
-  .then((user) => {
-    if (!user?._id) {
-      return res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+  .orFail(new Error('NotFound'))
+  .then((user) => res.send({ data: user }))
+  .catch((err) => {
+    switch (true) {
+      case err.name === 'CastError' || err.message === 'NotFound':
+        res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+        break;
+      default:
+        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
     }
-    return res.send({ data: user });
-  })
-  .catch(() => res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+  });
 
 export const createUser = (req: Request, res: Response) => User.create({
   name: req.body.name,
@@ -38,13 +42,14 @@ export const updateUserData = (req: CustomRequest, res: Response) => {
     .filter(([, value]) => value));
 
   return User.findByIdAndUpdate(req.user?._id, notEmptyUserData, { new: true, runValidators: true })
+    .orFail(new Error('NotFound'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      switch (err.name) {
-        case 'ValidationError':
+      switch (true) {
+        case err.name === 'ValidationError':
           res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
           break;
-        case 'CastError':
+        case err.name === 'CastError' || err.message === 'NotFound':
           res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
           break;
         default:
@@ -58,13 +63,14 @@ export const updateUserAvatar = (req: CustomRequest, res: Response) => User.find
   { avatar: req.body.avatar },
   { new: true, runValidators: true },
 )
+  .orFail(new Error('NotFound'))
   .then((user) => res.send({ data: user }))
   .catch((err) => {
-    switch (err.name) {
-      case 'ValidationError':
+    switch (true) {
+      case err.name === 'ValidationError':
         res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные для смены аватара введены некорректно' });
         break;
-      case 'CastError':
+      case err.name === 'CastError' || err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
         break;
       default:
