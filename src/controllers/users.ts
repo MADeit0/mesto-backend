@@ -12,7 +12,10 @@ export const findUserById = (req: Request, res: Response) => User.findById(req.p
   .then((user) => res.send({ data: user }))
   .catch((err) => {
     switch (true) {
-      case err.name === 'CastError' || err.message === 'NotFound':
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
         break;
       default:
@@ -49,7 +52,10 @@ export const updateUserData = (req: CustomRequest, res: Response) => {
         case err.name === 'ValidationError':
           res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
           break;
-        case err.name === 'CastError' || err.message === 'NotFound':
+        case err.name === 'CastError':
+          res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+          break;
+        case err.message === 'NotFound':
           res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
           break;
         default:
@@ -70,7 +76,10 @@ export const updateUserAvatar = (req: CustomRequest, res: Response) => User.find
       case err.name === 'ValidationError':
         res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные для смены аватара введены некорректно' });
         break;
-      case err.name === 'CastError' || err.message === 'NotFound':
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
         break;
       default:

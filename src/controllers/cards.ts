@@ -28,7 +28,10 @@ export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelet
   .then(() => res.send({ message: 'Карточка удалена успешно' }))
   .catch((err) => {
     switch (true) {
-      case err.name === 'CastError' || err.message === 'NotFound':
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
       default:
@@ -44,7 +47,10 @@ export const likeCard = (req: CustomRequest, res: Response) => Card.findByIdAndU
   .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
     switch (true) {
-      case err.name === 'CastError' || err.message === 'NotFound':
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
       default:
@@ -60,7 +66,10 @@ export const dislikeCard = (req: CustomRequest, res: Response) => Card.findByIdA
   .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
     switch (true) {
-      case err.name === 'CastError' || err.message === 'NotFound':
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
       default:
