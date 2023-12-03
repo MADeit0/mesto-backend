@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import isEmail from 'validator/lib/isEmail';
 
 export interface IUser {
   name: string;
@@ -26,7 +27,13 @@ const userSchema = new Schema<IUser>({
     default:
       'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
-  email: { type: String, require: true, unique: true },
+  email: {
+    type: String,
+    require: true,
+    unique: true,
+    minlength: 8,
+    validate: { validator(v:string) { return isEmail(v); }, message: 'неверный email нужно тут напистаь типо код' },
+  },
   password: { type: String, require: true },
 });
 

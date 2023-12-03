@@ -27,11 +27,8 @@ export const findUserById = (req: Request, res: Response) => User.findById(req.p
   });
 
 export const createUser = (req: userRequest, res: Response) => {
-  bcrypt.hash(req.body.password, 10).then(() => User.create({
-    name: req.body.name,
-    avatar: req.body.avatar,
-    about: req.body.about,
-    email: req.body.email,
+  bcrypt.hash(req.body.password, 10).then((hash) => User.create({
+    ...req.body, password: hash,
   })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
