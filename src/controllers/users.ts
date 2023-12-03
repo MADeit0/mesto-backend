@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import statusCodes from '../constants/statusCodes';
-import User from '../models/user';
+import User, { IUser } from '../models/user';
 import { CustomRequest } from '../types/customRequestType';
+
+type userRequest = Request<{}, {}, IUser, {}>
 
 export const findUsers = (req: Request, res: Response) => User.find({})
   .then((user) => res.send({ data: user }))
@@ -23,18 +26,24 @@ export const findUserById = (req: Request, res: Response) => User.findById(req.p
     }
   });
 
-export const createUser = (req: Request, res: Response) => User.create({
-  name: req.body.name,
-  avatar: req.body.avatar,
-  about: req.body.about,
-})
-  .then((user) => { res.send({ data: user }); })
-  .catch((err) => {
-    if (err.name === 'ValidationError') {
-      return res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
-    }
-    return res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
-  });
+export const createUser = (req: userRequest, res: Response) => {
+  bcrypt.hash(req.body.password, 10).then((hash) => User.create({
+    ...req.body, password: hash,
+  })
+    .then((user) => res.send({ data: user }))
+    .catch((err) => {
+      switch (true) {
+        case err.code === 11000:
+          res.status(statusCodes.BAD_REQUEST).send({ message: 'Пользовательль с таким email уже существует' });
+          break;
+        case err.name === 'ValidationError':
+          res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
+          break;
+        default:
+          res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+      }
+    })).catch((err) => res.status(400).send({ message: err }));
+};
 
 export const updateUserData = (req: CustomRequest, res: Response) => {
   const userData = {
