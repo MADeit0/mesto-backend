@@ -1,10 +1,10 @@
 import express, { Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-
 import { CustomRequest } from './types/customRequestType';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
 import statusCodes from './constants/statusCodes';
+import { login } from './controllers/users';
 
 // Слушаем 3000 порт
 const { PORT = 3000 } = process.env;
@@ -23,6 +23,7 @@ app.use((req: CustomRequest, _res: Response, next: NextFunction) => {
   next();
 });
 
+app.post('/signin', login);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 app.use((req: CustomRequest, res: Response) => {

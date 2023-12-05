@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import statusCodes from '../constants/statusCodes';
 import User, { IUser } from '../models/user';
 import { CustomRequest } from '../types/customRequestType';
@@ -95,3 +96,21 @@ export const updateUserAvatar = (req: CustomRequest, res: Response) => User.find
         res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
     }
   });
+
+export const login = (req: userRequest, res: Response) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const bearToken = `Bearer ${token}`;
+      res.cookie('Authorization', bearToken, {
+        maxAge: 3600000 * 24 * 7,
+        httpOnly: true,
+      })
+        .end();
+    })
+    .catch((err) => {
+      res.status(401).send({ message: err.message });
+    });
+};

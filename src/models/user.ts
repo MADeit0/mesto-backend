@@ -1,4 +1,7 @@
-import { Schema, model } from 'mongoose';
+import {
+  Schema, model, Model, Document,
+} from 'mongoose';
+import bcrypt from 'bcryptjs';
 import isEmail from 'validator/lib/isEmail';
 
 export interface IUser {
@@ -9,7 +12,13 @@ export interface IUser {
   password: string;
 }
 
-const userSchema = new Schema<IUser>({
+interface UserModel extends Model<IUser> {
+  // eslint-disable-next-line no-unused-vars
+  findUserByCredentials: (email: string, password: string) =>
+  Promise<Document<unknown, any, IUser>>
+}
+
+const userSchema = new Schema<IUser, UserModel>({
   name: {
     type: String,
     default: 'Жак-Ив Кусто',
@@ -37,4 +46,20 @@ const userSchema = new Schema<IUser>({
   password: { type: String, require: true },
 });
 
-export default model<IUser>('user', userSchema);
+userSchema.statics.findUserByCredentials = function (email: string, password: string) {
+  return this.findOne({ email })
+    .then((user) => {
+      if (!user) {
+        throw new Error('Неправильные почта или пароль');
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            throw new Error('Неправильные почта или пароль');
+          }
+          return user;
+        });
+    });
+};
+
+export default model<IUser, UserModel>('user', userSchema);
