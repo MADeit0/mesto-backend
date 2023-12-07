@@ -23,9 +23,15 @@ export const createCard = (req: SessionRequest, res: Response) => {
     });
 };
 
-export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelete(req.params.cardId)
+export const deleteCard = (req: SessionRequest, res: Response) => Card.findById(req.params.cardId)
   .orFail(new Error('NotFound'))
-  .then(() => res.send({ message: 'Карточка удалена успешно' }))
+  .then((card) => {
+    if (card.owner.toString() !== req.user?._id) {
+      throw new Error('Forbidden');
+    }
+    Card.findByIdAndDelete(req.params.cardId)
+      .then(() => res.send({ message: 'Карточка удалена успешно' }));
+  })
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
@@ -33,6 +39,9 @@ export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelet
         break;
       case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        break;
+      case err.message === 'Forbidden':
+        res.status(statusCodes.FORBIDDEN_REQUEST).send({ message: 'Нет прав на удаление этой карточки' });
         break;
       default:
         res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
