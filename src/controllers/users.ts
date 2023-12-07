@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import statusCodes from '../constants/statusCodes';
 import User, { IUser } from '../models/user';
-import { CustomRequest } from '../types/customRequestType';
+import { SessionRequest } from '../types';
 
 type userRequest = Request<{}, {}, IUser, {}>
 
@@ -46,15 +46,17 @@ export const createUser = (req: userRequest, res: Response) => {
     })).catch((err) => res.status(400).send({ message: err }));
 };
 
-export const updateUserData = (req: CustomRequest, res: Response) => {
+export const updateUserData = (req: SessionRequest, res: Response) => {
   const userData = {
     name: req.body.name,
     about: req.body.about,
+    email: req.body.email,
   };
   const notEmptyUserData = Object.fromEntries(Object.entries(userData)
     .filter(([, value]) => value));
 
   return User.findByIdAndUpdate(req.user?._id, notEmptyUserData, { new: true, runValidators: true })
+    .select('+email')
     .orFail(new Error('NotFound'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
@@ -74,7 +76,7 @@ export const updateUserData = (req: CustomRequest, res: Response) => {
     });
 };
 
-export const updateUserAvatar = (req: CustomRequest, res: Response) => User.findByIdAndUpdate(
+export const updateUserAvatar = (req: SessionRequest, res: Response) => User.findByIdAndUpdate(
   req.user?._id,
   { avatar: req.body.avatar },
   { new: true, runValidators: true },
@@ -104,7 +106,7 @@ export const login = (req: userRequest, res: Response) => {
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       const bearToken = `Bearer ${token}`;
-      res.cookie('Authorization', bearToken, {
+      res.cookie('authorization', bearToken, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
       })

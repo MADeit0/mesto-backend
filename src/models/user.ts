@@ -42,12 +42,13 @@ const userSchema = new Schema<IUser, UserModel>({
     unique: true,
     minlength: 7,
     validate: { validator(v:string) { return isEmail(v); }, message: 'неверный email' },
+    select: false,
   },
-  password: { type: String, require: true },
+  password: { type: String, require: true, select: false },
 });
 
 userSchema.statics.findUserByCredentials = function (email: string, password: string) {
-  return this.findOne({ email })
+  return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
         throw new Error('Неправильные почта или пароль');

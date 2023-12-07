@@ -1,10 +1,11 @@
-import express, { Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import { CustomRequest } from './types/customRequestType';
+import cookieParser from 'cookie-parser';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
 import statusCodes from './constants/statusCodes';
-import { login } from './controllers/users';
+import { createUser, login } from './controllers/users';
+import auth from './middlewares/auth';
 
 // Слушаем 3000 порт
 const { PORT = 3000 } = process.env;
@@ -12,21 +13,18 @@ const { PORT = 3000 } = process.env;
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
-// временное решение
-app.use((req: CustomRequest, _res: Response, next: NextFunction) => {
-  req.user = {
-    _id: '656669b09a1a12d8a8e8905e',
-  };
-  next();
-});
-
 app.post('/signin', login);
+app.post('/signup', createUser);
+
+app.use(auth);
+
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
-app.use((req: CustomRequest, res: Response) => {
+app.use((req: Request, res: Response) => {
   res.status(statusCodes.NOT_FOUND).send({ message: 'Роут не найден' });
 });
 
