@@ -99,6 +99,26 @@ export const updateUserAvatar = (req: SessionRequest, res: Response) => User.fin
     }
   });
 
+export const getMyProfile = (req: SessionRequest, res: Response) => User.findById(req.user?._id)
+  .select('+email')
+  .orFail(new Error('NotFound'))
+  .then((user) => res.send({ data: user }))
+  .catch((err) => {
+    switch (true) {
+      case err.name === 'ValidationError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные для смены аватара введены некорректно' });
+        break;
+      case err.name === 'CastError':
+        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
+        break;
+      case err.message === 'NotFound':
+        res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+        break;
+      default:
+        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+    }
+  });
+
 export const login = (req: userRequest, res: Response) => {
   const { email, password } = req.body;
 
