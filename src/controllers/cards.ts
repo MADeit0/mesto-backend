@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import statusCodes from '../constants/statusCodes';
 import Card from '../models/card';
-import { CustomRequest } from '../types/customRequestType';
+import { SessionRequest } from '../types';
 
 export const findCards = (req: Request, res: Response) => Card.find({})
   .then((card) => res.send({ data: card }))
   .catch(() => res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
 
-export const createCard = (req: CustomRequest, res: Response) => {
+export const createCard = (req: SessionRequest, res: Response) => {
   const id = req.user?._id;
   return Card.create({
     name: req.body.name,
@@ -23,9 +23,15 @@ export const createCard = (req: CustomRequest, res: Response) => {
     });
 };
 
-export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelete(req.params.cardId)
+export const deleteCard = (req: SessionRequest, res: Response) => Card.findById(req.params.cardId)
   .orFail(new Error('NotFound'))
-  .then(() => res.send({ message: 'Карточка удалена успешно' }))
+  .then((card) => {
+    if (card.owner.toString() !== req.user?._id) {
+      throw new Error('Forbidden');
+    }
+    Card.findByIdAndDelete(req.params.cardId)
+      .then(() => res.send({ message: 'Карточка удалена успешно' }));
+  })
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
@@ -34,12 +40,15 @@ export const deleteCard = (req: Request, res: Response) => Card.findByIdAndDelet
       case err.message === 'NotFound':
         res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
         break;
+      case err.message === 'Forbidden':
+        res.status(statusCodes.FORBIDDEN_REQUEST).send({ message: 'Нет прав на удаление этой карточки' });
+        break;
       default:
         res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
     }
   });
 
-export const likeCard = (req: CustomRequest, res: Response) => Card.findByIdAndUpdate(
+export const likeCard = (req: SessionRequest, res: Response) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user?._id } },
   { new: true },
@@ -58,7 +67,7 @@ export const likeCard = (req: CustomRequest, res: Response) => Card.findByIdAndU
     }
   });
 
-export const dislikeCard = (req: CustomRequest, res: Response) => Card.findByIdAndUpdate(
+export const dislikeCard = (req: SessionRequest, res: Response) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $pull: { likes: req.user?._id } },
   { new: true },
