@@ -3,6 +3,7 @@ import {
 } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import isEmail from 'validator/lib/isEmail';
+import UnauthorizedError from '../errors/UnauthorizedError';
 
 export interface IUser {
   name: string;
@@ -51,12 +52,12 @@ userSchema.statics.findUserByCredentials = function (email: string, password: st
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        throw new Error('Неправильные почта или пароль');
+        throw new UnauthorizedError('Неправильные почта или пароль');
       }
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            throw new Error('Неправильные почта или пароль');
+            throw new UnauthorizedError('Неправильные почта или пароль');
           }
           return user;
         });

@@ -1,11 +1,12 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
-import statusCodes from './constants/statusCodes';
+// import statusCodes from './constants/statusCodes';
 import { createUser, login } from './controllers/users';
 import auth from './middlewares/auth';
+import errorHandler from './middlewares/errorHandler';
 
 // Слушаем 3000 порт
 const { PORT = 3000 } = process.env;
@@ -24,9 +25,12 @@ app.use(auth);
 
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
-app.use((req: Request, res: Response) => {
-  res.status(statusCodes.NOT_FOUND).send({ message: 'Роут не найден' });
-});
+
+// app.use('*', (req: Request, res: Response) => {
+//   res.status(statusCodes.NOT_FOUND).send({ message: 'Роут не найден' });
+// });
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает

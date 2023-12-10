@@ -1,23 +1,26 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { SessionRequest } from '../types';
+import { UserRequest } from '../types';
+import UnauthorizedError from '../errors/UnauthorizedError';
 
-export default (req: SessionRequest, res: Response, next: NextFunction) => {
+const auth = (req: UserRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.cookies;
   if (!authorization || !authorization?.startsWith('Bearer ')) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(new UnauthorizedError('Необходима авторизация'));
   }
   const token = authorization.replace('Bearer ', '');
   let payload;
   try {
     payload = jwt.verify(token, 'some-secret-key');
   } catch (err) {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(new UnauthorizedError('Необходима авторизация'));
   }
 
   if (typeof payload !== 'object') {
-    return res.status(401).send({ message: 'Необходима авторизация' });
+    return next(new UnauthorizedError('Необходима авторизация'));
   }
   req.user = payload;
   return next();
 };
+
+export default auth;

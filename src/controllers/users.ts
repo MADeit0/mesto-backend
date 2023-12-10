@@ -1,52 +1,54 @@
-import { Request, Response } from 'express';
+import { NextFunction, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import statusCodes from '../constants/statusCodes';
-import User, { IUser } from '../models/user';
-import { SessionRequest } from '../types';
+import User from '../models/user';
+import { UserRequest } from '../types';
 
-type userRequest = Request<{}, {}, IUser, {}>
+import BadRequestError from '../errors/BadRequestError';
+import NotFoundError from '../errors/NotFoundError';
 
-export const findUsers = (req: Request, res: Response) => User.find({})
+export const findUsers = (req: UserRequest, res: Response, next: NextFunction) => User.find({})
   .then((user) => res.send({ data: user }))
-  .catch(() => res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+  .catch((err) => next(err));
 
-export const findUserById = (req: Request, res: Response) => User.findById(req.params.userId)
-  .orFail(new Error('NotFound'))
+export const findUserById = (
+  req: UserRequest,
+  res: Response,
+  next: NextFunction,
+) => User.findById(req.params.userId)
+  .orFail(new NotFoundError('Пользователь с указанным _id не существует'))
   .then((user) => res.send({ data: user }))
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
 
-export const createUser = (req: userRequest, res: Response) => {
-  bcrypt.hash(req.body.password, 10).then((hash) => User.create({
-    ...req.body, password: hash,
-  })
-    .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      switch (true) {
-        case err.code === 11000:
-          res.status(statusCodes.BAD_REQUEST).send({ message: 'Пользовательль с таким email уже существует' });
-          break;
-        case err.name === 'ValidationError':
-          res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
-          break;
-        default:
-          res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
-      }
-    })).catch((err) => res.status(400).send({ message: err }));
+export const createUser = (req: UserRequest, res: Response, next: NextFunction) => {
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => User.create({
+      ...req.body, password: hash,
+    })
+      .then((user) => res.send({ data: user }))
+      .catch((err) => {
+        switch (true) {
+          case err.code === 11000:
+            next(new BadRequestError('Пользовательль с таким email уже существует'));
+            break;
+          case err.name === 'ValidationError':
+            next(new BadRequestError('Данные пользователя введены некорректно'));
+            break;
+          default:
+            next(err);
+        }
+      }));
 };
 
-export const updateUserData = (req: SessionRequest, res: Response) => {
+export const updateUserData = (req: UserRequest, res: Response, next: NextFunction) => {
   const userData = {
     name: req.body.name,
     about: req.body.about,
@@ -57,69 +59,65 @@ export const updateUserData = (req: SessionRequest, res: Response) => {
 
   return User.findByIdAndUpdate(req.user?._id, notEmptyUserData, { new: true, runValidators: true })
     .select('+email')
-    .orFail(new Error('NotFound'))
+    .orFail(new NotFoundError('Пользователь с указанным _id не существует'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       switch (true) {
         case err.name === 'ValidationError':
-          res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные пользователя введены некорректно' });
+          next(new BadRequestError('Данные пользователя введены некорректно'));
           break;
         case err.name === 'CastError':
-          res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-          break;
-        case err.message === 'NotFound':
-          res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+          next(new BadRequestError('Передан невалидный _id'));
           break;
         default:
-          res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+          next(err);
       }
     });
 };
 
-export const updateUserAvatar = (req: SessionRequest, res: Response) => User.findByIdAndUpdate(
+export const updateUserAvatar = (
+  req: UserRequest,
+  res: Response,
+  next: NextFunction,
+) => User.findByIdAndUpdate(
   req.user?._id,
   { avatar: req.body.avatar },
   { new: true, runValidators: true },
 )
-  .orFail(new Error('NotFound'))
+  .orFail(new NotFoundError('Пользователь с указанным _id не существует'))
   .then((user) => res.send({ data: user }))
   .catch((err) => {
     switch (true) {
       case err.name === 'ValidationError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные для смены аватара введены некорректно' });
+        next(new BadRequestError('Данные для смены аватара введены некорректно'));
         break;
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
 
-export const getMyProfile = (req: SessionRequest, res: Response) => User.findById(req.user?._id)
+export const getMyProfile = (
+  req: UserRequest,
+  res: Response,
+  next: NextFunction,
+) => User.findById(req.user?._id)
   .select('+email')
-  .orFail(new Error('NotFound'))
+  .orFail(new NotFoundError('Пользователь с указанным _id не существует'))
   .then((user) => res.send({ data: user }))
   .catch((err) => {
     switch (true) {
-      case err.name === 'ValidationError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные для смены аватара введены некорректно' });
-        break;
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным _id не существует' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
 
-export const login = (req: userRequest, res: Response) => {
+export const login = (req: UserRequest, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
@@ -132,7 +130,5 @@ export const login = (req: userRequest, res: Response) => {
       })
         .end();
     })
-    .catch((err) => {
-      res.status(401).send({ message: err.message });
-    });
+    .catch((err) => next(err));
 };
