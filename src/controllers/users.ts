@@ -6,6 +6,7 @@ import { UserRequest } from '../types';
 
 import BadRequestError from '../errors/BadRequestError';
 import NotFoundError from '../errors/NotFoundError';
+import ConflictError from '../errors/Conflict';
 
 export const findUsers = (req: UserRequest, res: Response, next: NextFunction) => User.find({})
   .then((user) => res.send({ data: user }))
@@ -37,7 +38,7 @@ export const createUser = (req: UserRequest, res: Response, next: NextFunction) 
       .catch((err) => {
         switch (true) {
           case err.code === 11000:
-            next(new BadRequestError('Пользовательль с таким email уже существует'));
+            next(new ConflictError('Пользовательль с таким email уже существует'));
             break;
           case err.name === 'ValidationError':
             next(new BadRequestError('Данные пользователя введены некорректно'));
