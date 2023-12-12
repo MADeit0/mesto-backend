@@ -29,31 +29,35 @@ export const findUserById = (
     }
   });
 
-export const createUser = (req: UserRequest, res: Response, next: NextFunction) => {
-  bcrypt.hash(req.body.password, 10)
-    .then((hash) => User.create({
-      ...req.body, password: hash,
-    })
-      .then((user) => res.send({ data: user }))
-      .catch((err) => {
-        switch (true) {
-          case err.code === 11000:
-            next(new ConflictError('Пользовательль с таким email уже существует'));
-            break;
-          case err.name === 'ValidationError':
-            next(new BadRequestError('Данные пользователя введены некорректно'));
-            break;
-          default:
-            next(err);
-        }
-      }));
-};
+export const createUser = (
+  req: UserRequest,
+  res: Response,
+  next: NextFunction,
+) => bcrypt.hash(req.body.password, 10)
+  .then((hash) => User.create({
+    ...req.body, password: hash,
+  }))
+  .then((user) => {
+    const { password, ...userWithoutPassword } = user.toObject();
+    res.send(userWithoutPassword);
+  })
+  .catch((err) => {
+    switch (true) {
+      case err.code === 11000:
+        next(new ConflictError('Пользовательль с таким email уже существует'));
+        break;
+      case err.name === 'ValidationError':
+        next(new BadRequestError('Данные пользователя введены некорректно'));
+        break;
+      default:
+        next(err);
+    }
+  });
 
 export const updateUserData = (req: UserRequest, res: Response, next: NextFunction) => {
   const userData = {
     name: req.body.name,
     about: req.body.about,
-    email: req.body.email,
   };
   const notEmptyUserData = Object.fromEntries(Object.entries(userData)
     .filter(([, value]) => value));
@@ -90,7 +94,7 @@ export const updateUserAvatar = (
   .catch((err) => {
     switch (true) {
       case err.name === 'ValidationError':
-        next(new BadRequestError('Данные для смены аватара введены некорректно'));
+        next(new BadRequestError('Некорректная ссылка на аватар'));
         break;
       case err.name === 'CastError':
         next(new BadRequestError('Передан невалидный _id'));

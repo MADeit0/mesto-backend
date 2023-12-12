@@ -4,6 +4,7 @@ import {
 import bcrypt from 'bcryptjs';
 import isEmail from 'validator/lib/isEmail';
 import UnauthorizedError from '../errors/UnauthorizedError';
+import regexUrl from '../constants/regexp';
 
 export interface IUser {
   name: string;
@@ -14,7 +15,6 @@ export interface IUser {
 }
 
 interface UserModel extends Model<IUser> {
-  // eslint-disable-next-line no-unused-vars
   findUserByCredentials: (email: string, password: string) =>
   Promise<Document<unknown, any, IUser>>
 }
@@ -36,16 +36,26 @@ const userSchema = new Schema<IUser, UserModel>({
     type: String,
     default:
       'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    validate: {
+      validator(v:string) {
+        return regexUrl.test(v);
+      },
+    },
   },
   email: {
     type: String,
-    require: true,
     unique: true,
     minlength: 7,
-    validate: { validator(v:string) { return isEmail(v); }, message: 'неверный email' },
+    required: true,
+    validate: { validator(v:string) { return isEmail(v); } },
     select: false,
   },
-  password: { type: String, require: true, select: false },
+  password: {
+    type: String,
+    minlength: 7,
+    required: true,
+    select: false,
+  },
 });
 
 userSchema.statics.findUserByCredentials = function (email: string, password: string) {
