@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import { errors } from 'celebrate';
+import { requestLogger, errorLogger } from './middlewares/logger';
 import NotFoundError from './errors/NotFoundError';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
@@ -20,6 +21,8 @@ app.use(cookieParser());
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
+app.use(requestLogger);
+
 app.post('/signin', validateLogin, login);
 app.post('/signup', validateCreateUser, createUser);
 
@@ -30,6 +33,7 @@ app.use('/cards', cardsRouter);
 
 app.use('*', (req: Request, res: Response, next: NextFunction) => next(new NotFoundError('Страница не найдена')));
 
+app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
 
