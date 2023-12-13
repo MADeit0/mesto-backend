@@ -1,13 +1,16 @@
-import { Request, Response } from 'express';
-import statusCodes from '../constants/statusCodes';
+import { Request, Response, NextFunction } from 'express';
 import Card from '../models/card';
-import { SessionRequest } from '../types';
+import { CardRequest } from '../types';
 
-export const findCards = (req: Request, res: Response) => Card.find({})
+import BadRequestError from '../errors/BadRequestError';
+import ForbiddenRequestError from '../errors/ForbiddenRequestError';
+import NotFoundError from '../errors/NotFoundError';
+
+export const findCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
   .then((card) => res.send({ data: card }))
-  .catch(() => res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+  .catch((err) => next(err));
 
-export const createCard = (req: SessionRequest, res: Response) => {
+export const createCard = (req: CardRequest, res: Response, next: NextFunction) => {
   const id = req.user?._id;
   return Card.create({
     name: req.body.name,
@@ -16,18 +19,25 @@ export const createCard = (req: SessionRequest, res: Response) => {
   })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(statusCodes.BAD_REQUEST).send({ message: 'Данные введены некорректно' });
+      switch (true) {
+        case err.name === 'ValidationError':
+          next(new BadRequestError('Данные введены некорректно'));
+          break;
+        default:
+          next(err);
       }
-      return res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
-export const deleteCard = (req: SessionRequest, res: Response) => Card.findById(req.params.cardId)
-  .orFail(new Error('NotFound'))
+export const deleteCard = (
+  req: CardRequest,
+  res: Response,
+  next: NextFunction,
+) => Card.findById(req.params.cardId)
+  .orFail(new NotFoundError('Передан несуществующий _id карточки'))
   .then((card) => {
     if (card.owner.toString() !== req.user?._id) {
-      throw new Error('Forbidden');
+      throw new ForbiddenRequestError('Нет прав на удаление этой карточки');
     }
     Card.findByIdAndDelete(req.params.cardId)
       .then(() => res.send({ message: 'Карточка удалена успешно' }));
@@ -35,53 +45,49 @@ export const deleteCard = (req: SessionRequest, res: Response) => Card.findById(
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
-        break;
-      case err.message === 'Forbidden':
-        res.status(statusCodes.FORBIDDEN_REQUEST).send({ message: 'Нет прав на удаление этой карточки' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
 
-export const likeCard = (req: SessionRequest, res: Response) => Card.findByIdAndUpdate(
+export const likeCard = (
+  req: CardRequest,
+  res: Response,
+  next: NextFunction,
+) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user?._id } },
   { new: true },
-).orFail(new Error('NotFound'))
+).orFail(new NotFoundError('Передан несуществующий _id карточки'))
   .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
 
-export const dislikeCard = (req: SessionRequest, res: Response) => Card.findByIdAndUpdate(
+export const dislikeCard = (
+  req: CardRequest,
+  res: Response,
+  next: NextFunction,
+) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $pull: { likes: req.user?._id } },
   { new: true },
-).orFail(new Error('NotFound'))
+).orFail(new NotFoundError('Передан несуществующий _id карточки'))
   .then((card) => res.send({ data: card.likes }))
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
-        res.status(statusCodes.BAD_REQUEST).send({ message: 'Передан невалидный _id' });
-        break;
-      case err.message === 'NotFound':
-        res.status(statusCodes.NOT_FOUND).send({ message: 'Передан несуществующий _id карточки' });
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
-        res.status(statusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
     }
   });
