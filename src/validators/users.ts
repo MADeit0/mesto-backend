@@ -4,8 +4,8 @@ const userValidatorBody = {
   name: Joi.string().min(2).max(32),
   about: Joi.string().min(2).max(200),
   avatar: Joi.string(),
-  email: Joi.string(),
-  password: Joi.string(),
+  email: Joi.string().min(7),
+  password: Joi.string().min(7),
 };
 
 export const validateCreateUser = celebrate({
