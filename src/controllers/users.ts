@@ -7,6 +7,7 @@ import { UserRequest } from '../types';
 import BadRequestError from '../errors/BadRequestError';
 import NotFoundError from '../errors/NotFoundError';
 import ConflictError from '../errors/Conflict';
+import 'dotenv/config';
 
 export const findUsers = (req: UserRequest, res: Response, next: NextFunction) => User.find({})
   .then((user) => res.send({ data: user }))
@@ -125,13 +126,20 @@ export const getMyProfile = (
 export const login = (req: UserRequest, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
+  const JWT_SECRET = process.env.NODE_ENV === 'production' ? process.env.JWT_SECRET! : 'dev-secret';
+
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const token = jwt.sign(
+        { _id: user._id },
+        JWT_SECRET,
+        { expiresIn: '7d' },
+      );
       const bearToken = `Bearer ${token}`;
       res.cookie('authorization', bearToken, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
+        sameSite: true,
       })
         .end();
     })

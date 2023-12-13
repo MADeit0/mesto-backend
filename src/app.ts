@@ -10,6 +10,7 @@ import { createUser, login } from './controllers/users';
 import auth from './middlewares/auth';
 import errorHandler from './middlewares/errorHandler';
 import { validateCreateUser, validateLogin } from './validators/users';
+import 'dotenv/config';
 
 // Слушаем 3000 порт
 const { PORT = 3000 } = process.env;

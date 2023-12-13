@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { UserRequest } from '../types';
 import UnauthorizedError from '../errors/UnauthorizedError';
 
+const JWT_SECRET = process.env.NODE_ENV === 'production' ? process.env.JWT_SECRET! : 'dev-secret';
+
 const auth = (req: UserRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.cookies;
   if (!authorization || !authorization?.startsWith('Bearer ')) {
@@ -11,7 +13,7 @@ const auth = (req: UserRequest, res: Response, next: NextFunction) => {
   const token = authorization.replace('Bearer ', '');
   let payload;
   try {
-    payload = jwt.verify(token, 'some-secret-key');
+    payload = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     return next(new UnauthorizedError('Необходима авторизация'));
   }
