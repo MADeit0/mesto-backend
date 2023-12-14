@@ -1,11 +1,12 @@
 import { Joi, celebrate } from 'celebrate';
+import regexUrl from '../constants/regexp';
 
 const userValidatorBody = {
   name: Joi.string().min(2).max(32),
   about: Joi.string().min(2).max(200),
-  avatar: Joi.string(),
-  email: Joi.string().min(7),
-  password: Joi.string().min(7),
+  avatar: Joi.string().pattern(regexUrl),
+  email: Joi.string(),
+  password: Joi.string(),
 };
 
 export const validateCreateUser = celebrate({
@@ -33,5 +34,11 @@ export const validateLogin = celebrate({
   body: Joi.object().keys({
     email: userValidatorBody.email.required(),
     password: userValidatorBody.password.required(),
+  }),
+});
+
+export const validateUserId = celebrate({
+  params: Joi.object().keys({
+    postId: Joi.string().alphanum().length(24).required(),
   }),
 });
