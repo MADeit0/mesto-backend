@@ -15,6 +15,6 @@ export const validateCreateCard = celebrate({
 
 export const validateCardId = celebrate({
   params: Joi.object().keys({
-    postId: Joi.string().alphanum().length(24).required(),
+    cardId: Joi.string().alphanum().length(24).required(),
   }),
 });

@@ -39,6 +39,6 @@ export const validateLogin = celebrate({
 
 export const validateUserId = celebrate({
   params: Joi.object().keys({
-    postId: Joi.string().alphanum().length(24).required(),
+    userId: Joi.string().alphanum().length(24).required(),
   }),
 });

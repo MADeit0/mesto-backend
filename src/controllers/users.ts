@@ -60,10 +60,8 @@ export const updateUserData = (req: UserRequest, res: Response, next: NextFuncti
     name: req.body.name,
     about: req.body.about,
   };
-  const notEmptyUserData = Object.fromEntries(Object.entries(userData)
-    .filter(([, value]) => value));
 
-  return User.findByIdAndUpdate(req.user?._id, notEmptyUserData, { new: true, runValidators: true })
+  return User.findByIdAndUpdate(req.user?._id, userData, { new: true, runValidators: true })
     .select('+email')
     .orFail(new NotFoundError('Пользователь с указанным _id не существует'))
     .then((user) => res.send({ data: user }))
@@ -71,9 +69,6 @@ export const updateUserData = (req: UserRequest, res: Response, next: NextFuncti
       switch (true) {
         case err.name === 'ValidationError':
           next(new BadRequestError('Данные пользователя введены некорректно'));
-          break;
-        case err.name === 'CastError':
-          next(new BadRequestError('Передан невалидный _id'));
           break;
         default:
           next(err);
