@@ -1,4 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
+import regexUrl from '../constants/regexp';
 
 export interface ICard {
   name: string;
@@ -18,6 +19,11 @@ const cardSchema = new Schema<ICard>({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator(v:string) {
+        return regexUrl.test(v);
+      },
+    },
   },
   owner: {
     type: Schema.Types.ObjectId,
@@ -28,13 +34,12 @@ const cardSchema = new Schema<ICard>({
     {
       type: Schema.Types.ObjectId,
       ref: 'user',
-      required: true,
       default: [],
     },
   ],
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: Date.now,
   },
 });
 

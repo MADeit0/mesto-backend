@@ -45,14 +45,12 @@ const userSchema = new Schema<IUser, UserModel>({
   email: {
     type: String,
     unique: true,
-    minlength: 7,
     required: true,
     validate: { validator(v:string) { return isEmail(v); } },
     select: false,
   },
   password: {
     type: String,
-    minlength: 7,
     required: true,
     select: false,
   },
