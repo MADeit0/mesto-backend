@@ -30,16 +30,19 @@ export const deleteCard = (
   req: CardRequest,
   res: Response,
   next: NextFunction,
-) => Card.findOneAndDelete({
-  _id: req.params.cardId,
-  owner: req.user?._id,
-})
-  .orFail(new NotFoundError('карточка не найдена'))
+) => Card.findById(req.params.cardId)
+  .orFail(new NotFoundError('Передан несуществующий _id карточки'))
+  .then((card) => {
+    if (card.owner.toString() !== req.user?._id) {
+      throw new ForbiddenRequestError('Нет прав на удаление этой карточки');
+    }
+    return Card.findByIdAndDelete(req.params.cardId);
+  })
   .then(() => res.send({ message: 'Карточка удалена успешно' }))
   .catch((err) => {
     switch (true) {
       case err.name === 'CastError':
-        next(new BadRequestError('Передан невалидный _id карточки'));
+        next(new BadRequestError('Передан невалидный _id'));
         break;
       default:
         next(err);
