@@ -31,7 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-mongoose.connect('mongodb://localhost:27017/mestodb');
+mongoose.connect(process.env.DATABASE = 'mongodb://localhost:27017/mestodb');
 
 app.use(requestLogger);
 
