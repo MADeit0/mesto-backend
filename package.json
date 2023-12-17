@@ -1,12 +1,14 @@
 {
   "name": "mesto-backend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "main": "app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx eslint src/**/*.ts",
-    "start": "ts-node-dev src/app.ts"
+    "start": "ts-node src/app.ts",
+    "dev": "ts-node-dev src/app.ts",
+    "build": "tsc --build"
   },
   "repository": {
     "type": "git",
@@ -19,21 +21,34 @@
   },
   "homepage": "https://github.com/MADeit0/mesto-backend#readme",
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.6",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.9.0",
+    "@types/validator": "^13.11.7",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
     "eslint": "^8.53.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-standard-with-typescript": "^39.1.1",
     "eslint-plugin-import": "^2.29.0",
-    "eslint-plugin-n": "^16.3.1",
-    "eslint-plugin-promise": "^6.1.1",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "bcryptjs": "^2.4.3",
+    "celebrate": "^15.0.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-winston": "^4.2.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.1",
+    "validator": "^13.11.0",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
   }
 }

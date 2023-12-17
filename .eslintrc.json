@@ -30,6 +30,8 @@
     ]
   },
   "rules": {
+    "quotes": ["error", "single"],
+    "no-unused-vars": "off",
     "no-underscore-dangle": [
       "error",
       {
